@@ -13,29 +13,32 @@
   "license": "MIT",
   "author": "Rodrigo Gomes da Silva <rodrigo.smscom@gmail.com>",
   "type": "module",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
   "files": [
-    "lib/*"
+    "lib/*",
+    "lib-cjs/*"
   ],
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",
-      "import": "./lib/index.js"
+      "import": "./lib/index.js",
+      "require": "./lib-cjs/index.js",
+      "default": "./lib/index.js"
     }
   },
   "scripts": {
     "build:all": "tsc && typedoc",
     "build:docs": "typedoc",
-    "build:tsc": "tsc",
+    "build:tsc": "tsc && tsc -p tsconfig.cjs.json && node ./scripts/prepare-cjs.mjs",
     "changelog:last": "conventional-changelog -p angular -r 2",
     "changelog:preview": "conventional-changelog -p angular -u",
     "changelog:update": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
     "example": "node --inspect -r ts-node/register Example/example.ts",
     "lint": "eslint src --ext .js,.ts",
-    "lint:fix": "yarn lint --fix",
-    "prepack": "tsc",
-    "prepare": "tsc",
+    "lint:fix": "npm run lint -- --fix",
+    "prepack": "npm run build:tsc",
+    "prepare": "npm run build:tsc",
     "release": "release-it",
     "test": "jest"
   },

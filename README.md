@@ -18,9 +18,8 @@ Note: This package requires `baileys` as a peer dependency. Make sure to install
 
 ## Requirements
 
-- Node.js >= 20
-- An ESM runtime (`type: "module"`). CommonJS consumers should load the library via `await import('@rodrigogs/baileys-store')`.
-- `baileys` ^7.0.0-rc.4
+
+- CommonJS support is available through the bundled `lib-cjs` build, so `const { makeInMemoryStore } = require('@rodrigogs/baileys-store')` also works.
 
 If you're migrating from an older release, replace any direct usage of `proto.*.fromObject` with `proto.*.create`.
 

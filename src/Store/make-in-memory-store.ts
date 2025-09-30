@@ -1,3 +1,4 @@
+import KeyedDB from '@adiwajshing/keyed-db/lib/KeyedDB.js'
 import type { Comparable } from '@adiwajshing/keyed-db/lib/Types.js'
 import {
 	type BaileysEventEmitter,
@@ -21,12 +22,11 @@ import type { LabelAssociation, MessageLabelAssociation } from 'baileys/lib/Type
 import { LabelAssociationType } from 'baileys/lib/Types/LabelAssociation.js'
 import type { ILogger } from 'baileys/lib/Utils/logger.js'
 import { createHash } from 'node:crypto'
-import { createRequire } from 'node:module'
 import makeOrderedDictionary from './make-ordered-dictionary.js'
 import { ObjectRepository } from './object-repository.js'
 
-const require = createRequire(import.meta.url)
-const { default: KeyedDB } = require('@adiwajshing/keyed-db') as { default: typeof import('@adiwajshing/keyed-db').default }
+type KeyedDBConstructor = typeof import('@adiwajshing/keyed-db/lib/KeyedDB.js').default
+const KeyedDBClass = KeyedDB as unknown as KeyedDBConstructor
 
 export const waChatKey = (pin: boolean) => ({
 	key: (c: Chat) => (pin ? (c.pinned ? '1' : '0') : '') + (c.archived ? '0' : '1') + (c.conversationTimestamp ? c.conversationTimestamp.toString(16).padStart(8, '0') : '') + c.id,
@@ -93,14 +93,14 @@ export default (config: BaileysInMemoryStoreConfig) => {
 	const labelAssociationKey = config.labelAssociationKey || waLabelAssociationKey
 	const logger: ILogger = config.logger || DEFAULT_CONNECTION_CONFIG.logger.child({ stream: 'in-mem-store' })
 
-	const chats = new KeyedDB<Chat, string>(chatKey, c => c.id)
+	const chats = new KeyedDBClass<Chat, string>(chatKey, c => c.id)
 	const messages: { [_: string]: ReturnType<typeof makeMessagesDictionary> } = {}
 	const contacts: { [_: string]: Contact } = {}
 	const groupMetadata: { [_: string]: GroupMetadata } = {}
 	const presences: { [id: string]: { [participant: string]: PresenceData } } = {}
 	const state: ConnectionState = { connection: 'close' }
 	const labels = new ObjectRepository<Label>()
-	const labelAssociations = new KeyedDB<LabelAssociation, string>(labelAssociationKey, labelAssociationKey.key)
+	const labelAssociations = new KeyedDBClass<LabelAssociation, string>(labelAssociationKey, labelAssociationKey.key)
 
 	const assertMessageList = (jid: string) => {
 		if(!messages[jid]) {

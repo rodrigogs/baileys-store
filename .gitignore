@@ -12,6 +12,7 @@ browser-token.json
 decoded-ws.json
 docs
 lib
+lib-cjs
 messages*.json
 node_modules
 output.csv

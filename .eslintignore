@@ -1,5 +1,7 @@
 # Ignore artifacts:
 lib
+lib-cjs
+scripts
 coverage
 *.lock
 .eslintrc.json
