@@ -16,6 +16,14 @@ yarn add @rodrigogs/baileys-store baileys
 
 Note: This package requires `baileys` as a peer dependency. Make sure to install it alongside this package.
 
+## Requirements
+
+- Node.js >= 20
+- An ESM runtime (`type: "module"`). CommonJS consumers should load the library via `await import('@rodrigogs/baileys-store')`.
+- `baileys` ^7.0.0-rc.4
+
+If you're migrating from an older release, replace any direct usage of `proto.*.fromObject` with `proto.*.create`.
+
 # Usage
 
 This package provides different storage implementations for Baileys:

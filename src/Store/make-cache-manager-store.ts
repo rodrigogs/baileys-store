@@ -1,7 +1,5 @@
-import { proto } from 'baileys'
-import { AuthenticationCreds } from 'baileys'
-import { BufferJSON, initAuthCreds } from 'baileys'
-import logger from 'baileys/lib/Utils/logger'
+import { type AuthenticationCreds, BufferJSON, initAuthCreds, proto } from 'baileys'
+import logger from 'baileys/lib/Utils/logger.js'
 import { caching, Store } from 'cache-manager'
 
 const makeCacheManagerAuthState = async(store: Store, sessionKey: string) => {
@@ -70,7 +68,7 @@ const makeCacheManagerAuthState = async(store: Store, sessionKey: string) => {
 							let value: proto.Message.AppStateSyncKeyData | AuthenticationCreds | null =
                                 await readData(`${type}-${id}`)
 							if(type === 'app-state-sync-key' && value) {
-								value = proto.Message.AppStateSyncKeyData.fromObject(value)
+								value = proto.Message.AppStateSyncKeyData.create(value as proto.Message.IAppStateSyncKeyData)
 							}
 
 							data[id] = value

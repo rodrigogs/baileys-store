@@ -1,6 +1,6 @@
 {
   "name": "@rodrigogs/baileys-store",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "Baileys Store",
   "keywords": [
     "whatsapp",
@@ -12,11 +12,18 @@
   },
   "license": "MIT",
   "author": "Rodrigo Gomes da Silva <rodrigo.smscom@gmail.com>",
+  "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "files": [
     "lib/*"
   ],
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js"
+    }
+  },
   "scripts": {
     "build:all": "tsc && typedoc",
     "build:docs": "typedoc",
@@ -41,7 +48,7 @@
     "@types/jest": "^27.5.1",
     "@types/node": "^16.0.0",
     "@types/ws": "^8.0.0",
-    "baileys": "^6.7.17",
+    "baileys": "^7.0.0-rc.4",
     "conventional-changelog-cli": "^2.2.2",
     "eslint": "^8.0.0",
     "jest": "^27.0.6",
@@ -58,7 +65,7 @@
     "typescript": "^5.8.2"
   },
   "peerDependencies": {
-    "baileys": "^6.7.17"
+    "baileys": "^7.0.0-rc.4"
   },
   "peerDependenciesMeta": {
     "baileys": {

@@ -1,18 +1,32 @@
-import type KeyedDB from '@adiwajshing/keyed-db'
-import type { Comparable } from '@adiwajshing/keyed-db/lib/Types'
-import type { BaileysEventEmitter, Chat, ConnectionState, Contact, GroupMetadata, PresenceData, WAMessage, WAMessageCursor, WAMessageKey } from 'baileys'
-import { proto } from 'baileys'
-import { DEFAULT_CONNECTION_CONFIG } from 'baileys'
-import { jidDecode, jidNormalizedUser } from 'baileys'
-import type makeMDSocket from 'baileys/lib/Socket'
-import { Label } from 'baileys/lib/Types/Label'
-import { LabelAssociation, LabelAssociationType, MessageLabelAssociation } from 'baileys/lib/Types/LabelAssociation'
-import { md5, toNumber, updateMessageWithReaction, updateMessageWithReceipt } from 'baileys/lib/Utils'
-import { ILogger } from 'baileys/lib/Utils/logger'
-import makeOrderedDictionary from './make-ordered-dictionary'
-import { ObjectRepository } from './object-repository'
+import type { Comparable } from '@adiwajshing/keyed-db/lib/Types.js'
+import {
+	type BaileysEventEmitter,
+	type Chat,
+	type ConnectionState,
+	type Contact,
+	DEFAULT_CONNECTION_CONFIG,
+	type GroupMetadata,
+	jidDecode,
+	jidNormalizedUser,
+	type PresenceData,
+	proto,
+	toNumber,
+	type WAMessage,
+	type WAMessageCursor,
+	type WAMessageKey,
+	type WASocket
+} from 'baileys'
+import type { Label } from 'baileys/lib/Types/Label.js'
+import type { LabelAssociation, MessageLabelAssociation } from 'baileys/lib/Types/LabelAssociation.js'
+import { LabelAssociationType } from 'baileys/lib/Types/LabelAssociation.js'
+import type { ILogger } from 'baileys/lib/Utils/logger.js'
+import { createHash } from 'node:crypto'
+import { createRequire } from 'node:module'
+import makeOrderedDictionary from './make-ordered-dictionary.js'
+import { ObjectRepository } from './object-repository.js'
 
-type WASocket = ReturnType<typeof makeMDSocket>
+const require = createRequire(import.meta.url)
+const { default: KeyedDB } = require('@adiwajshing/keyed-db') as { default: typeof import('@adiwajshing/keyed-db').default }
 
 export const waChatKey = (pin: boolean) => ({
 	key: (c: Chat) => (pin ? (c.pinned ? '1' : '0') : '') + (c.archived ? '0' : '1') + (c.conversationTimestamp ? c.conversationTimestamp.toString(16).padStart(8, '0') : '') + c.id,
@@ -35,21 +49,58 @@ export type BaileysInMemoryStoreConfig = {
 
 const makeMessagesDictionary = () => makeOrderedDictionary(waMessageID)
 
+const computeContactHashSuffix = (user: string | undefined) => {
+	if(!user) {
+		return undefined
+	}
+
+	return createHash('md5').update(`${user}WA_ADD_NOTIF`, 'utf8').digest('base64').slice(0, 3)
+}
+
+const mergeUserReceipt = (message: WAMessage, receipt: proto.IUserReceipt) => {
+	if(!message.userReceipt) {
+		message.userReceipt = []
+	}
+
+	const existing = message.userReceipt.find(item => item.userJid === receipt.userJid)
+	if(existing) {
+		Object.assign(existing, receipt)
+	} else {
+		message.userReceipt.push({ ...receipt })
+	}
+}
+
+const mergeMessageReaction = (message: WAMessage, reaction: proto.IReaction) => {
+	if(!message.reactions) {
+		message.reactions = []
+	}
+
+	const existing = message.reactions.find(item => item.key?.id === reaction.key?.id && item.key?.fromMe === reaction.key?.fromMe && item.key?.remoteJid === reaction.key?.remoteJid && item.senderTimestampMs === reaction.senderTimestampMs)
+	if(reaction.text) {
+		if(existing) {
+			Object.assign(existing, reaction)
+		} else {
+			message.reactions.push({ ...reaction })
+		}
+	} else if(existing) {
+		message.reactions = message.reactions.filter(item => item !== existing)
+	}
+}
+
 export default (config: BaileysInMemoryStoreConfig) => {
 	const socket = config.socket
 	const chatKey = config.chatKey || waChatKey(true)
 	const labelAssociationKey = config.labelAssociationKey || waLabelAssociationKey
 	const logger: ILogger = config.logger || DEFAULT_CONNECTION_CONFIG.logger.child({ stream: 'in-mem-store' })
-	const KeyedDB = require('@adiwajshing/keyed-db').default
 
-	const chats = new KeyedDB(chatKey, c => c.id) as KeyedDB<Chat, string>
+	const chats = new KeyedDB<Chat, string>(chatKey, c => c.id)
 	const messages: { [_: string]: ReturnType<typeof makeMessagesDictionary> } = {}
 	const contacts: { [_: string]: Contact } = {}
 	const groupMetadata: { [_: string]: GroupMetadata } = {}
 	const presences: { [id: string]: { [participant: string]: PresenceData } } = {}
 	const state: ConnectionState = { connection: 'close' }
 	const labels = new ObjectRepository<Label>()
-	const labelAssociations = new KeyedDB(labelAssociationKey, labelAssociationKey.key) as KeyedDB<LabelAssociation, string>
+	const labelAssociations = new KeyedDB<LabelAssociation, string>(labelAssociationKey, labelAssociationKey.key)
 
 	const assertMessageList = (jid: string) => {
 		if(!messages[jid]) {
@@ -136,28 +187,26 @@ export default (config: BaileysInMemoryStoreConfig) => {
 
 		ev.on('contacts.update', async updates => {
 			for(const update of updates) {
-				let contact: Contact
-				if(contacts[update.id!]) {
-					contact = contacts[update.id!]
-				} else {
-					const contactHashes = await Promise.all(Object.keys(contacts).map(async contactId => {
-						const { user } = jidDecode(contactId)!
-						return [contactId, (await md5(Buffer.from(user + 'WA_ADD_NOTIF', 'utf8'))).toString('base64').slice(0, 3)]
-					}))
-					contact = contacts[contactHashes.find(([, b]) => b === update.id)?.[0] || ''] // find contact by attrs.hash, when user is not saved as a contact
+				const contactId = update.id
+				let contact = contactId ? contacts[contactId] : undefined
+				if(!contact && contactId) {
+					const resolved = Object.entries(contacts).find(([existingId]) => computeContactHashSuffix(jidDecode(existingId)?.user) === contactId)
+					if(resolved) {
+						contact = contacts[resolved[0]]
+					}
 				}
 
 				if(contact) {
 					if(update.imgUrl === 'changed') {
-						contact.imgUrl = socket ? await socket?.profilePictureUrl(contact.id) : undefined
+						contact.imgUrl = socket ? await socket.profilePictureUrl(contact.id) : undefined
 					} else if(update.imgUrl === 'removed') {
 						delete contact.imgUrl
 					}
-				} else {
-					return logger.debug({ update }, 'got update for non-existant contact')
-				}
 
-				Object.assign(contacts[contact.id], contact)
+					Object.assign(contacts[contact.id], contact)
+				} else {
+					logger.debug({ update }, 'got update for non-existant contact')
+				}
 			}
 		})
 		ev.on('chats.upsert', newChats => {
@@ -310,7 +359,7 @@ export default (config: BaileysInMemoryStoreConfig) => {
 				const obj = messages[key.remoteJid!]
 				const msg = obj?.get(key.id!)
 				if(msg) {
-					updateMessageWithReceipt(msg, receipt)
+					mergeUserReceipt(msg, receipt)
 				}
 			}
 		})
@@ -320,7 +369,7 @@ export default (config: BaileysInMemoryStoreConfig) => {
 				const obj = messages[key.remoteJid!]
 				const msg = obj?.get(key.id!)
 				if(msg) {
-					updateMessageWithReaction(msg, reaction)
+					mergeMessageReaction(msg, reaction)
 				}
 			}
 		})
@@ -342,7 +391,7 @@ export default (config: BaileysInMemoryStoreConfig) => {
 		for(const jid in json.messages) {
 			const list = assertMessageList(jid)
 			for(const msg of json.messages[jid]) {
-				list.upsert(proto.WebMessageInfo.fromObject(msg), 'append')
+				list.upsert(proto.WebMessageInfo.create(msg), 'append')
 			}
 		}
 	}
