@@ -1,3 +1,12 @@
+# [1.1.0](https://github.com/rodrigogs/baileys-store/compare/v1.0.1...v1.1.0) (2025-11-10)
+
+
+### Features
+
+* add test application and upgrade dependencies ([5aac49e](https://github.com/rodrigogs/baileys-store/commit/5aac49ebb380d3e2453270a8115224ccac9c54c5))
+
+
+
 ## [1.0.1](https://github.com/rodrigogs/baileys-store/compare/v1.0.0...v1.0.1) (2025-05-17)
 
 
