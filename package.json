@@ -24,7 +24,6 @@
     "changelog:last": "conventional-changelog -p angular -r 2",
     "changelog:preview": "conventional-changelog -p angular -u",
     "changelog:update": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
-    "example": "node --inspect -r ts-node/register Example/example.ts",
     "lint": "eslint src --ext .js,.ts",
     "lint:fix": "yarn lint --fix",
     "prepack": "tsc",
@@ -34,38 +33,27 @@
   },
   "dependencies": {
     "@adiwajshing/keyed-db": "0.2.4",
-    "@whiskeysockets/eslint-config": "github:whiskeysockets/eslint-config",
-    "cache-manager": "5.7.6"
+    "cache-manager": "7.2.4"
   },
   "devDependencies": {
-    "@types/jest": "^27.5.1",
-    "@types/node": "^16.0.0",
-    "@types/ws": "^8.0.0",
-    "baileys": "^6.7.17",
-    "conventional-changelog-cli": "^2.2.2",
-    "eslint": "^8.0.0",
-    "jest": "^27.0.6",
-    "jimp": "^0.16.1",
-    "json": "^11.0.0",
-    "link-preview-js": "^3.0.0",
-    "open": "^8.4.2",
-    "release-it": "^15.10.3",
-    "sharp": "^0.32.6",
-    "ts-jest": "^27.0.3",
-    "ts-node": "^10.8.1",
-    "typedoc": "^0.27.9",
-    "typedoc-plugin-markdown": "4.4.2",
-    "typescript": "^5.8.2"
+    "@types/node": "^20.17.9",
+    "@whiskeysockets/eslint-config": "github:whiskeysockets/eslint-config",
+    "baileys": "7.0.0-rc.3",
+    "conventional-changelog-cli": "^5.0.0",
+    "release-it": "^19.0.6",
+    "typedoc": "^0.28.14",
+    "typedoc-plugin-markdown": "4.9.0",
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
-    "baileys": "^6.7.17"
+    "baileys": ">=6.0.0 <8.0.0"
   },
   "peerDependenciesMeta": {
     "baileys": {
       "optional": false
     }
   },
-  "packageManager": "yarn@1.22.19",
+  "packageManager": "yarn@1.22.22",
   "engines": {
     "node": ">=20.0.0"
   }

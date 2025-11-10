@@ -342,7 +342,7 @@ export default (config: BaileysInMemoryStoreConfig) => {
 		for(const jid in json.messages) {
 			const list = assertMessageList(jid)
 			for(const msg of json.messages[jid]) {
-				list.upsert(proto.WebMessageInfo.fromObject(msg), 'append')
+				list.upsert(proto.WebMessageInfo.create(msg), 'append')
 			}
 		}
 	}
