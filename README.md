@@ -47,7 +47,17 @@ const authState = await makeCacheManagerAuthState(store, 'session-key')
 const sock = makeWASocket({ auth: authState })
 ```
 
-For more detailed usage instructions, check the [Example](Example/example.ts) file.
+## Testing & Reference Implementation
+
+For a comprehensive example with real WhatsApp connection, store validation, and testing utilities, check the [test-app](test-app/) directory. It includes:
+
+- Real WhatsApp authentication with QR code
+- Store validation and integrity checking
+- Support for both Baileys v6 and v7
+- Interactive terminal UI
+- Comprehensive documentation
+
+See [test-app/README.md](test-app/README.md) for detailed instructions.
 
 # Disclaimer
 This project is not affiliated, associated, authorized, endorsed by, or in any way officially connected with WhatsApp or any of its subsidiaries or its affiliates.
