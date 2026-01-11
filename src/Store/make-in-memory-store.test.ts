@@ -117,6 +117,15 @@ describe('makeInMemoryStore', () => {
 				expect(unarchivedKey).toContain('1')
 			})
 
+			it('should handle chat without conversationTimestamp', () => {
+				const chatKey = waChatKey(true)
+				const chat = createChat('test@s.whatsapp.net', { conversationTimestamp: undefined })
+				const key = chatKey.key(chat)
+
+				// Key should still be generated without timestamp
+				expect(key).toContain('test@s.whatsapp.net')
+			})
+
 			it('should compare keys correctly', () => {
 				const chatKey = waChatKey(true)
 				expect(chatKey.compare('a', 'b')).toBeGreaterThan(0)
@@ -343,6 +352,17 @@ describe('makeInMemoryStore', () => {
 			// Should not crash
 			await new Promise(resolve => setTimeout(resolve, 10))
 		})
+
+		it('should log debug when contact not found by id or hash', async () => {
+			// Emit update for a contact that doesn't exist at all
+			mockEmitter.emit('contacts.update', [{ id: '999@s.whatsapp.net', name: 'Unknown' }])
+
+			// Wait for async processing
+			await new Promise(resolve => setTimeout(resolve, 10))
+
+			// Should not crash and should log debug message
+			expect(store.contacts['999@s.whatsapp.net']).toBeUndefined()
+		})
 	})
 
 	describe('chats.upsert event', () => {
@@ -372,6 +392,13 @@ describe('makeInMemoryStore', () => {
 			mockEmitter.emit('chats.update', [{ id: '123@s.whatsapp.net', unreadCount: 3 }])
 
 			expect(store.chats.get('123@s.whatsapp.net')?.unreadCount).toBe(8)
+		})
+
+		it('should accumulate unread counts from undefined', () => {
+			mockEmitter.emit('chats.upsert', [createChat('123@s.whatsapp.net', { unreadCount: undefined })])
+			mockEmitter.emit('chats.update', [{ id: '123@s.whatsapp.net', unreadCount: 3 }])
+
+			expect(store.chats.get('123@s.whatsapp.net')?.unreadCount).toBe(3)
 		})
 
 		it('should not accumulate when unreadCount is 0', () => {
@@ -633,6 +660,23 @@ describe('makeInMemoryStore', () => {
 				action: 'demote',
 			})
 
+			expect(store.groupMetadata[jid].participants[0].isAdmin).toBe(false)
+		})
+
+		it('should handle promote/demote for non-matching participant', () => {
+			const jid = '123@g.us'
+			store.groupMetadata[jid] = createGroupMetadata(jid, 'Group', [
+				{ id: 'user1@s.whatsapp.net', isAdmin: false, isSuperAdmin: false },
+			])
+
+			mockEmitter.emit('group-participants.update', {
+				id: jid,
+				author: 'admin@s.whatsapp.net',
+				participants: ['user2@s.whatsapp.net'], // Different user
+				action: 'promote',
+			})
+
+			// user1 should remain not admin
 			expect(store.groupMetadata[jid].participants[0].isAdmin).toBe(false)
 		})
 

@@ -297,4 +297,21 @@ describe('makeCacheManagerAuthState', () => {
 			).resolves.not.toThrow()
 		})
 	})
+
+	describe('error handling in clearState', () => {
+		it('should log error when clear throws', async () => {
+			const errorKeyv = {
+				...createMockKeyv(),
+				clear: vi.fn(async () => {
+					throw new Error('Clear error')
+				}),
+			}
+
+			const authState = await makeCacheManagerAuthState(errorKeyv as any, sessionKey)
+
+			// Should not throw when clear fails
+			await expect(authState.clearState()).resolves.not.toThrow()
+			expect(errorKeyv.clear).toHaveBeenCalledTimes(1)
+		})
+	})
 })
