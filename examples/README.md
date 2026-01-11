@@ -110,7 +110,7 @@ const store = new Keyv({
 
 ### Custom Adapter
 ```typescript
-import { StorageAdapter, makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+import { StorageAdapter, makeKeyvAuthState } from '@rodrigogs/baileys-store'
 
 class MyStorage implements StorageAdapter {
 	async get(key: string): Promise<string | undefined> { /* ... */ }

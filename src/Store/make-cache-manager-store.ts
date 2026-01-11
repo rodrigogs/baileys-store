@@ -80,12 +80,13 @@ export interface StorageAdapter {
  * @example
  * ```ts
  * import Keyv from 'keyv'
- * import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+ * import { makeKeyvAuthState } from '@rodrigogs/baileys-store'
+ * import makeWASocket from 'baileys'
  *
  * const store = new Keyv('sqlite://auth.db')
  *
  * async function init() {
- *   const { state, saveCreds, clearState } = await makeCacheManagerAuthState(store, 'session-1')
+ *   const { state, saveCreds, clearState } = await makeKeyvAuthState(store, 'session-1')
  *
  *   // Pass `state` to Baileys when creating the socket
  *   const sock = makeWASocket({ auth: state })
