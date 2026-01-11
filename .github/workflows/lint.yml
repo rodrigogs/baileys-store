@@ -3,20 +3,41 @@ name: Check PR health
 on: [pull_request]
 
 jobs:
-  check-lint:
+  lint:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
 
     - name: Install Node
-      uses: actions/setup-node@v1
+      uses: actions/setup-node@v4
       with:
         node-version: 20.x
 
     - name: Install packages
-      run: yarn
-    
+      run: npm ci
+
     - name: Check linting
-      run: yarn lint
+      run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+
+    - name: Install packages
+      run: npm ci
+
+    - name: Run tests
+      run: npm test
+
+    - name: Run tests with coverage
+      run: npm run test:coverage

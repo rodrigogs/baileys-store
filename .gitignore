@@ -9,6 +9,7 @@ baileys_auth_info*
 baileys_store*.json
 browser-messages.json
 browser-token.json
+coverage
 decoded-ws.json
 docs
 lib

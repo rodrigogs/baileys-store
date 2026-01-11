@@ -25,11 +25,13 @@
     "changelog:preview": "conventional-changelog -p angular -u",
     "changelog:update": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
     "lint": "eslint src --ext .js,.ts",
-    "lint:fix": "yarn lint --fix",
+    "lint:fix": "npm run lint -- --fix",
     "prepack": "tsc",
     "prepare": "tsc",
     "release": "release-it",
-    "test": "jest"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@adiwajshing/keyed-db": "0.2.4",
@@ -37,13 +39,15 @@
   },
   "devDependencies": {
     "@types/node": "^20.17.9",
+    "@vitest/coverage-v8": "^4.0.16",
     "@whiskeysockets/eslint-config": "github:whiskeysockets/eslint-config",
     "baileys": "7.0.0-rc.3",
     "conventional-changelog-cli": "^5.0.0",
     "release-it": "^19.0.6",
     "typedoc": "^0.28.14",
     "typedoc-plugin-markdown": "4.9.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
   },
   "peerDependencies": {
     "baileys": ">=6.0.0 <8.0.0"
@@ -53,7 +57,6 @@
       "optional": false
     }
   },
-  "packageManager": "yarn@1.22.22",
   "engines": {
     "node": ">=20.0.0"
   }
