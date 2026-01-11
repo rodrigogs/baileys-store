@@ -20,5 +20,3 @@ jobs:
     
     - name: Check linting
       run: npm run lint
-      env:
-        ESLINT_USE_FLAT_CONFIG: false
