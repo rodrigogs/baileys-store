@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@adiwajshing/keyed-db": "0.2.4",
-    "cache-manager": "7.2.4"
+    "keyv": "^5.5.5"
   },
   "devDependencies": {
     "@types/node": "^20.17.9",

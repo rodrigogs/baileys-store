@@ -5,7 +5,7 @@ A storage implementation for [Baileys](https://github.com/WhiskeySockets/Baileys
 ![GitHub License](https://img.shields.io/github/license/rodrigogs/baileys-store)
 ![npm](https://img.shields.io/npm/v/baileys-store)
 ![GitHub issues](https://img.shields.io/github/issues/rodrigogs/baileys-store)
-![Tests](https://img.shields.io/badge/tests-144%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-145%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 
 # Installation
@@ -23,7 +23,7 @@ Note: This package requires `baileys` as a peer dependency. Make sure to install
 This package provides different storage implementations for Baileys:
 
 1. In-Memory Store
-2. Cache Manager Auth State
+2. Keyv Auth State (with any Keyv-compatible storage backend)
 
 ## In-Memory Store
 
@@ -35,19 +35,37 @@ const store = makeInMemoryStore({})
 store.bind(baileysSock)
 ```
 
-## Cache Manager Auth State
+## Keyv Auth State
 
 ```typescript
-import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
-import { caching } from 'cache-manager'
+import { makeCacheManagerAuthState, Keyv } from '@rodrigogs/baileys-store'
 
-// Create a store with cache-manager
-const store = await caching('memory')
-// or any other cache-manager storage
+// Create a store with Keyv (in-memory by default)
+const store = new Keyv()
+
+// Or use any Keyv-compatible storage backend:
+// const store = new Keyv('redis://localhost:6379')
+// const store = new Keyv('mongodb://localhost:27017/mydb')
+// const store = new Keyv('postgresql://localhost:5432/mydb')
+
 const authState = await makeCacheManagerAuthState(store, 'session-key')
+
 // Use the auth state in your baileys connection
 const sock = makeWASocket({ auth: authState })
 ```
+
+### Keyv Storage Backends
+
+Keyv supports multiple storage backends through adapters:
+
+- **In-Memory** (default): `new Keyv()`
+- **Redis**: `new Keyv('redis://localhost:6379')` (requires `@keyv/redis`)
+- **MongoDB**: `new Keyv('mongodb://localhost:27017/mydb')` (requires `@keyv/mongo`)
+- **PostgreSQL**: `new Keyv('postgresql://localhost:5432/mydb')` (requires `@keyv/postgres`)
+- **MySQL**: `new Keyv('mysql://localhost:3306/mydb')` (requires `@keyv/mysql`)
+- **SQLite**: `new Keyv('sqlite://path/to/database.sqlite')` (requires `@keyv/sqlite`)
+
+See [Keyv documentation](https://github.com/jaredwray/keyv) for more storage options.
 
 ## Testing & Reference Implementation
 

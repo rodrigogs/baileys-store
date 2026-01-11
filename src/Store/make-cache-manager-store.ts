@@ -2,9 +2,9 @@ import { proto } from 'baileys'
 import { AuthenticationCreds } from 'baileys'
 import { BufferJSON, initAuthCreds } from 'baileys'
 import logger from 'baileys/lib/Utils/logger'
-import { createCache, type Cache } from 'cache-manager'
+import Keyv from 'keyv'
 
-const makeCacheManagerAuthState = async(store: Cache, sessionKey: string) => {
+const makeCacheManagerAuthState = async(store: Keyv, sessionKey: string) => {
 	const defaultKey = (file: string): string => `${sessionKey}:${file}`
 
 	const databaseConn = store
@@ -12,7 +12,7 @@ const makeCacheManagerAuthState = async(store: Cache, sessionKey: string) => {
 	const writeData = async(file: string, data: object) => {
 		let ttl: number | undefined = undefined
 		if (file === 'creds') {
-			ttl = 63115200 // 2 years
+			ttl = 63115200000 // 2 years in milliseconds
 		}
 
 		await databaseConn.set(
@@ -39,7 +39,7 @@ const makeCacheManagerAuthState = async(store: Cache, sessionKey: string) => {
 
 	const removeData = async(file: string) => {
 		try {
-			return await databaseConn.del(defaultKey(file))
+			return await databaseConn.delete(defaultKey(file))
 		} catch {
 			logger.error(`Error removing ${file} from session ${sessionKey}`)
 		}
@@ -47,11 +47,9 @@ const makeCacheManagerAuthState = async(store: Cache, sessionKey: string) => {
 
 	const clearState = async() => {
 		try {
-			// In cache-manager v7, there's no direct keys() method
-			// This would need to be implemented based on the specific store being used
-			// For now, we'll leave this as a placeholder
-			console.warn('clearState not fully implemented for cache-manager v7')
+			await databaseConn.clear()
 		} catch (err) {
+			logger.error('Error clearing state:', err)
 		}
 	}
 
@@ -98,3 +96,4 @@ const makeCacheManagerAuthState = async(store: Cache, sessionKey: string) => {
 }
 
 export default makeCacheManagerAuthState
+export { makeCacheManagerAuthState, Keyv }
