@@ -60,9 +60,18 @@ export interface StorageAdapter {
  *       stored, and a falsy value causes the corresponding key to be deleted.
  * - `saveCreds()`: A function that persists the current credentials (`creds`) to the storage backend.
  *   Call this after Baileys updates the credentials (e.g. inside the `creds.update` event handler).
- * - `clearState()`: A function that clears all stored data. **Warning**: This clears the entire store,
- *   including data from other sessions if multiple sessions share the same store instance. For session
- *   isolation, use a separate store instance per session or use the `namespace` option in Keyv.
+ * - `clearState()`: A function that clears all stored data. **Important limitation**: This calls
+ *   `clear()` on the entire store, which will delete data from ALL sessions if multiple sessions
+ *   share the same store instance. This breaks session isolation.
+ *   
+ *   **Recommended solutions for session isolation**:
+ *   1. Use Keyv with `namespace` option (one namespace per session):
+ *      ```ts
+ *      const store = new Keyv({ namespace: 'session-1' })
+ *      // clearState() will only affect this namespace
+ *      ```
+ *   2. Use separate store instances per session
+ *   3. Avoid calling `clearState()` if multiple sessions share one store
  *
  * @example
  * ```ts
@@ -176,5 +185,27 @@ const makeCacheManagerAuthState = async(store: Keyv | StorageAdapter, sessionKey
 	}
 }
 
+/**
+ * Creates an authentication state backed by Keyv or any compatible storage adapter.
+ * 
+ * This is the recommended function name that clearly indicates it works with Keyv-based storage.
+ * Alias for `makeCacheManagerAuthState`.
+ *
+ * @param store - The storage backend (Keyv instance or StorageAdapter implementation)
+ * @param sessionKey - A unique identifier for the session used as key prefix
+ * @returns Authentication state object with state, saveCreds, and clearState
+ * 
+ * @example
+ * ```ts
+ * import Keyv from 'keyv'
+ * import { makeKeyvAuthState } from '@rodrigogs/baileys-store'
+ * 
+ * // Recommended: Use Keyv with namespace for session isolation
+ * const store = new Keyv({ namespace: 'session-1' })
+ * const { state, saveCreds } = await makeKeyvAuthState(store, 'session-1')
+ * ```
+ */
+const makeKeyvAuthState = makeCacheManagerAuthState
+
 export default makeCacheManagerAuthState
-export { makeCacheManagerAuthState, Keyv }
+export { makeCacheManagerAuthState, makeKeyvAuthState, Keyv }

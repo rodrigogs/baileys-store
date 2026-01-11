@@ -39,15 +39,18 @@ store.bind(baileysSock)
 
 The library uses **Keyv** for storage, making it easy to plug in any database or memory system.
 
+> 💡 **Note**: The function `makeCacheManagerAuthState` is kept for backwards compatibility but is deprecated. 
+> Use `makeKeyvAuthState` for new projects as it better reflects the implementation.
+
 ### Quick Start (In-Memory)
 
 ```typescript
-import { makeCacheManagerAuthState, Keyv } from '@rodrigogs/baileys-store'
+import { makeKeyvAuthState, Keyv } from '@rodrigogs/baileys-store'
 import makeWASocket from 'baileys'
 
-// Create an in-memory store
-const store = new Keyv()
-const { state, saveCreds } = await makeCacheManagerAuthState(store, 'my-session')
+// Create an in-memory store with namespace for session isolation
+const store = new Keyv({ namespace: 'my-session' })
+const { state, saveCreds } = await makeKeyvAuthState(store, 'my-session')
 
 // Use with Baileys
 const sock = makeWASocket({ auth: state })
@@ -59,18 +62,19 @@ sock.ev.on('creds.update', saveCreds)
 ### Redis Example
 
 ```typescript
-import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+import { makeKeyvAuthState } from '@rodrigogs/baileys-store'
 import Keyv from 'keyv'
 import KeyvRedis from '@keyv/redis'
 import makeWASocket from 'baileys'
 
 // Install: npm install @keyv/redis
+// Use namespace for session isolation (important for multi-session apps)
 const store = new Keyv({
 	store: new KeyvRedis('redis://localhost:6379'),
-	namespace: 'baileys' // Optional: prefix all keys
+	namespace: 'session-id' // Each session should have unique namespace
 })
 
-const { state, saveCreds } = await makeCacheManagerAuthState(store, 'session-id')
+const { state, saveCreds } = await makeKeyvAuthState(store, 'session-id')
 const sock = makeWASocket({ auth: state })
 
 // Persist credentials when they update

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { makeCacheManagerAuthState } from './make-cache-manager-store'
+import { makeCacheManagerAuthState, makeKeyvAuthState } from './make-cache-manager-store'
 
 // Define a minimal Keyv interface matching what we use
 interface MockKeyv {
@@ -312,6 +312,23 @@ describe('makeCacheManagerAuthState', () => {
 			// Should not throw when clear fails
 			await expect(authState.clearState()).resolves.not.toThrow()
 			expect(errorKeyv.clear).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	describe('makeKeyvAuthState alias', () => {
+		it('should work with makeKeyvAuthState alias', async() => {
+			const keyv = createMockKeyv()
+			const sessionKey = 'test-session'
+
+			// Use the new alias
+			const authState = await makeKeyvAuthState(keyv as any, sessionKey)
+
+			// Should have same structure as makeCacheManagerAuthState
+			expect(authState).toHaveProperty('state')
+			expect(authState).toHaveProperty('saveCreds')
+			expect(authState).toHaveProperty('clearState')
+			expect(authState.state).toHaveProperty('creds')
+			expect(authState.state).toHaveProperty('keys')
 		})
 	})
 })
