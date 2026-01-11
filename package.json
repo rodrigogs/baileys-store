@@ -25,7 +25,7 @@
     "changelog:preview": "conventional-changelog -p angular -u",
     "changelog:update": "conventional-changelog -p angular -i CHANGELOG.md -s -r 0",
     "lint": "eslint src --ext .js,.ts",
-    "lint:fix": "yarn lint --fix",
+    "lint:fix": "npm run lint -- --fix",
     "prepack": "tsc",
     "prepare": "tsc",
     "release": "release-it",
