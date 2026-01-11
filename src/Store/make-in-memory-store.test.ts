@@ -344,6 +344,16 @@ describe('makeInMemoryStore', () => {
 			expect(storeNoSocket.contacts['123@s.whatsapp.net'].imgUrl).toBeUndefined()
 		})
 
+		it('should handle contact update without imgUrl property', () => {
+			mockEmitter.emit('contacts.upsert', [createContact('123@s.whatsapp.net', 'John')])
+			// Update contact without imgUrl field (neither 'changed' nor 'removed')
+			mockEmitter.emit('contacts.update', [{ id: '123@s.whatsapp.net' }])
+
+			// Should not crash, contact should still exist
+			expect(store.contacts['123@s.whatsapp.net']).toBeDefined()
+			expect(store.contacts['123@s.whatsapp.net'].name).toBe('John')
+		})
+
 		it('should handle update for non-existent contact by hash lookup', async () => {
 			mockEmitter.emit('contacts.upsert', [createContact('123@s.whatsapp.net', 'John')])
 			// Update with hash-like id (simulating WhatsApp's behavior)
@@ -354,14 +364,30 @@ describe('makeInMemoryStore', () => {
 		})
 
 		it('should log debug when contact not found by id or hash', async () => {
-			// Emit update for a contact that doesn't exist at all
-			mockEmitter.emit('contacts.update', [{ id: '999@s.whatsapp.net', name: 'Unknown' }])
+			// Add some existing contacts first to ensure hash lookup happens
+			mockEmitter.emit('contacts.upsert', [
+				createContact('111@s.whatsapp.net', 'Alice'),
+				createContact('222@s.whatsapp.net', 'Bob'),
+			])
 
-			// Wait for async processing
+			// Wait for the upsert to complete
 			await new Promise(resolve => setTimeout(resolve, 10))
 
-			// Should not crash and should log debug message
-			expect(store.contacts['999@s.whatsapp.net']).toBeUndefined()
+			// Emit update for a completely non-existent contact
+			// The ID format doesn't match any existing contact or hash
+			mockEmitter.emit('contacts.update', [{ 
+				id: 'completely-nonexistent-hash-abc123',
+				imgUrl: 'removed'
+			}])
+
+			// Wait for async processing
+			await new Promise(resolve => setTimeout(resolve, 100))
+
+			// Should not crash - the update was silently ignored with debug log
+			// The existing contacts should remain unchanged
+			expect(store.contacts['111@s.whatsapp.net']).toBeDefined()
+			expect(store.contacts['222@s.whatsapp.net']).toBeDefined()
+			expect(store.contacts['completely-nonexistent-hash-abc123']).toBeUndefined()
 		})
 	})
 

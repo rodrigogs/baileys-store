@@ -5,8 +5,8 @@ A storage implementation for [Baileys](https://github.com/WhiskeySockets/Baileys
 ![GitHub License](https://img.shields.io/github/license/rodrigogs/baileys-store)
 ![npm](https://img.shields.io/npm/v/baileys-store)
 ![GitHub issues](https://img.shields.io/github/issues/rodrigogs/baileys-store)
-![Tests](https://img.shields.io/badge/tests-150%20passing-brightgreen)
-![Coverage](https://img.shields.io/badge/coverage-99.33%25%20branches%2C%20100%25%20lines-brightgreen)
+![Tests](https://img.shields.io/badge/tests-151%20passing-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 
 # Installation
 
