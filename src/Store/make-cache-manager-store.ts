@@ -4,7 +4,39 @@ import { BufferJSON, initAuthCreds } from 'baileys'
 import logger from 'baileys/lib/Utils/logger'
 import Keyv from 'keyv'
 
-const makeCacheManagerAuthState = async(store: Keyv, sessionKey: string) => {
+/**
+ * Generic storage interface compatible with Keyv and other key-value stores
+ */
+export interface StorageAdapter {
+	/**
+	 * Get a value from storage
+	 * @param key - The key to retrieve
+	 * @returns The value, or undefined if not found
+	 */
+	get(key: string): Promise<string | undefined>
+	
+	/**
+	 * Set a value in storage
+	 * @param key - The key to store
+	 * @param value - The value to store
+	 * @param ttl - Optional time-to-live in milliseconds
+	 */
+	set(key: string, value: string, ttl?: number): Promise<void>
+	
+	/**
+	 * Delete a value from storage
+	 * @param key - The key to delete
+	 * @returns True if the key was deleted, false otherwise
+	 */
+	delete(key: string): Promise<boolean>
+	
+	/**
+	 * Clear all values from storage
+	 */
+	clear(): Promise<void>
+}
+
+const makeCacheManagerAuthState = async(store: Keyv | StorageAdapter, sessionKey: string) => {
 	const defaultKey = (file: string): string => `${sessionKey}:${file}`
 
 	const databaseConn = store

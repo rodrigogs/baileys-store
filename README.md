@@ -37,35 +37,127 @@ store.bind(baileysSock)
 
 ## Keyv Auth State
 
+The library uses **Keyv** for storage, making it easy to plug in any database or memory system.
+
+### Quick Start (In-Memory)
+
 ```typescript
 import { makeCacheManagerAuthState, Keyv } from '@rodrigogs/baileys-store'
+import makeWASocket from 'baileys'
 
-// Create a store with Keyv (in-memory by default)
+// Create an in-memory store
 const store = new Keyv()
+const authState = await makeCacheManagerAuthState(store, 'my-session')
 
-// Or use any Keyv-compatible storage backend:
-// const store = new Keyv('redis://localhost:6379')
-// const store = new Keyv('mongodb://localhost:27017/mydb')
-// const store = new Keyv('postgresql://localhost:5432/mydb')
-
-const authState = await makeCacheManagerAuthState(store, 'session-key')
-
-// Use the auth state in your baileys connection
+// Use with Baileys
 const sock = makeWASocket({ auth: authState })
 ```
 
-### Keyv Storage Backends
+### Redis Example
 
-Keyv supports multiple storage backends through adapters:
+```typescript
+import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+import Keyv from 'keyv'
+import KeyvRedis from '@keyv/redis'
+import makeWASocket from 'baileys'
 
-- **In-Memory** (default): `new Keyv()`
-- **Redis**: `new Keyv('redis://localhost:6379')` (requires `@keyv/redis`)
-- **MongoDB**: `new Keyv('mongodb://localhost:27017/mydb')` (requires `@keyv/mongo`)
-- **PostgreSQL**: `new Keyv('postgresql://localhost:5432/mydb')` (requires `@keyv/postgres`)
-- **MySQL**: `new Keyv('mysql://localhost:3306/mydb')` (requires `@keyv/mysql`)
-- **SQLite**: `new Keyv('sqlite://path/to/database.sqlite')` (requires `@keyv/sqlite`)
+// Install: npm install @keyv/redis
+const store = new Keyv({
+	store: new KeyvRedis('redis://localhost:6379'),
+	namespace: 'baileys' // Optional: prefix all keys
+})
 
-See [Keyv documentation](https://github.com/jaredwray/keyv) for more storage options.
+const authState = await makeCacheManagerAuthState(store, 'session-id')
+const sock = makeWASocket({ auth: authState })
+```
+
+### PostgreSQL Example
+
+```typescript
+import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+import Keyv from 'keyv'
+import KeyvPostgres from '@keyv/postgres'
+
+// Install: npm install @keyv/postgres
+const store = new Keyv({
+	store: new KeyvPostgres('postgresql://user:pass@localhost:5432/dbname'),
+	namespace: 'baileys'
+})
+
+const authState = await makeCacheManagerAuthState(store, 'session-id')
+```
+
+### MongoDB Example
+
+```typescript
+import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+import Keyv from 'keyv'
+import KeyvMongo from '@keyv/mongo'
+
+// Install: npm install @keyv/mongo
+const store = new Keyv({
+	store: new KeyvMongo('mongodb://localhost:27017/baileys'),
+	namespace: 'sessions'
+})
+
+const authState = await makeCacheManagerAuthState(store, 'session-id')
+```
+
+### Custom Storage Adapter
+
+You can implement your own storage backend by implementing the `StorageAdapter` interface:
+
+```typescript
+import { makeCacheManagerAuthState, StorageAdapter } from '@rodrigogs/baileys-store'
+
+class MyCustomStorage implements StorageAdapter {
+	async get(key: string): Promise<string | undefined> {
+		// Your implementation
+		return await myDatabase.get(key)
+	}
+	
+	async set(key: string, value: string, ttl?: number): Promise<void> {
+		// Your implementation
+		await myDatabase.set(key, value, ttl)
+	}
+	
+	async delete(key: string): Promise<boolean> {
+		// Your implementation
+		return await myDatabase.delete(key)
+	}
+	
+	async clear(): Promise<void> {
+		// Your implementation
+		await myDatabase.clear()
+	}
+}
+
+const customStore = new MyCustomStorage()
+const authState = await makeCacheManagerAuthState(customStore, 'session-id')
+```
+
+### Supported Storage Backends
+
+Keyv provides official adapters for:
+
+| Backend | Package | Installation |
+|---------|---------|-------------|
+| **Redis** | `@keyv/redis` | `npm install @keyv/redis` |
+| **PostgreSQL** | `@keyv/postgres` | `npm install @keyv/postgres` |
+| **MongoDB** | `@keyv/mongo` | `npm install @keyv/mongo` |
+| **MySQL** | `@keyv/mysql` | `npm install @keyv/mysql` |
+| **SQLite** | `@keyv/sqlite` | `npm install @keyv/sqlite` |
+| **Memcached** | `@keyv/memcache` | `npm install @keyv/memcache` |
+| **Etcd** | `@keyv/etcd` | `npm install @keyv/etcd` |
+
+For more storage options and advanced configurations, see the [Keyv documentation](https://github.com/jaredwray/keyv).
+
+### More Examples
+
+Check the [examples](examples/) directory for complete, runnable examples:
+- **[Redis Storage](examples/redis-storage.ts)** - Production-ready Redis backend
+- **[Custom Storage Adapter](examples/custom-storage.ts)** - Implement your own storage
+- **[Comparison Guide](examples/README.md)** - Choose the right backend for your needs
 
 ## Testing & Reference Implementation
 
