@@ -39,6 +39,9 @@ export interface StorageAdapter {
 /**
  * Creates an authentication state backed by a generic key-value store (e.g. Keyv).
  *
+ * @deprecated The function name is misleading as it no longer uses cache-manager.
+ * The name is kept for backwards compatibility. Consider it as `makeAuthState` or `makeKeyvAuthState`.
+ *
  * The returned object is compatible with Baileys' `useMultiFileAuthState` / `useSingleFileAuthState`
  * shape and can be passed directly to Baileys when initializing the connection.
  *
@@ -57,8 +60,9 @@ export interface StorageAdapter {
  *       stored, and a falsy value causes the corresponding key to be deleted.
  * - `saveCreds()`: A function that persists the current credentials (`creds`) to the storage backend.
  *   Call this after Baileys updates the credentials (e.g. inside the `creds.update` event handler).
- * - `clearState()`: A function that clears all stored data associated with this store instance. This
- *   is typically used when logging out or fully resetting a session.
+ * - `clearState()`: A function that clears all stored data. **Warning**: This clears the entire store,
+ *   including data from other sessions if multiple sessions share the same store instance. For session
+ *   isolation, use a separate store instance per session or use the `namespace` option in Keyv.
  *
  * @example
  * ```ts

@@ -12,8 +12,10 @@ Demonstrates using Redis as a persistent storage backend using `@keyv/redis`.
 # Install dependencies
 npm install @rodrigogs/baileys-store baileys keyv @keyv/redis
 
-# Start Redis (using Docker)
-docker run -d -p 6379:6379 redis
+# Start Redis (using Docker - DEVELOPMENT ONLY)
+# ⚠️ WARNING: This binds Redis without authentication. Use only for local development.
+# For production, use a secured Redis instance with authentication and TLS.
+docker run -d -p 127.0.0.1:6379:6379 redis
 
 # Or install Redis locally
 # macOS: brew install redis && redis-server
