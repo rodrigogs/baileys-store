@@ -10,7 +10,7 @@
 import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
 import Keyv from 'keyv'
 import KeyvRedis from '@keyv/redis'
-import makeWASocket, { DisconnectReason, useMultiFileAuthState } from 'baileys'
+import makeWASocket, { DisconnectReason } from 'baileys'
 import { Boom } from '@hapi/boom'
 
 async function main() {

@@ -36,6 +36,51 @@ export interface StorageAdapter {
 	clear(): Promise<void>
 }
 
+/**
+ * Creates an authentication state backed by a generic key-value store (e.g. Keyv).
+ *
+ * The returned object is compatible with Baileys' `useMultiFileAuthState` / `useSingleFileAuthState`
+ * shape and can be passed directly to Baileys when initializing the connection.
+ *
+ * @param store - The storage backend used to persist credentials and keys. Can be a `Keyv` instance
+ * or any `StorageAdapter` implementation exposing `get`, `set`, `delete`, and `clear` methods.
+ * @param sessionKey - A unique identifier for the session. It is used as a prefix for all keys
+ * stored in the underlying `store` so that multiple sessions can safely share the same backend.
+ *
+ * @returns An object containing:
+ * - `state`: The current auth state with:
+ *   - `creds`: The loaded or newly initialized `AuthenticationCreds` instance.
+ *   - `keys`: A key store with:
+ *     - `get(type, ids)`: Asynchronously retrieves key data for the given `type` and list of `ids`,
+ *       returning an object mapping each id to its stored value (or `null` if missing).
+ *     - `set(data)`: Persists or removes key data. For each `data[category][id]`, a truthy value is
+ *       stored, and a falsy value causes the corresponding key to be deleted.
+ * - `saveCreds()`: A function that persists the current credentials (`creds`) to the storage backend.
+ *   Call this after Baileys updates the credentials (e.g. inside the `creds.update` event handler).
+ * - `clearState()`: A function that clears all stored data associated with this store instance. This
+ *   is typically used when logging out or fully resetting a session.
+ *
+ * @example
+ * ```ts
+ * import Keyv from 'keyv'
+ * import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+ *
+ * const store = new Keyv('sqlite://auth.db')
+ *
+ * async function init() {
+ *   const { state, saveCreds, clearState } = await makeCacheManagerAuthState(store, 'session-1')
+ *
+ *   // Pass `state` to Baileys when creating the socket
+ *   const sock = makeWASocket({ auth: state })
+ *
+ *   // When credentials change, persist them
+ *   sock.ev.on('creds.update', saveCreds)
+ *
+ *   // To fully reset this session later:
+ *   // await clearState()
+ * }
+ * ```
+ */
 const makeCacheManagerAuthState = async(store: Keyv | StorageAdapter, sessionKey: string) => {
 	const defaultKey = (file: string): string => `${sessionKey}:${file}`
 

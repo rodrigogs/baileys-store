@@ -47,10 +47,13 @@ import makeWASocket from 'baileys'
 
 // Create an in-memory store
 const store = new Keyv()
-const authState = await makeCacheManagerAuthState(store, 'my-session')
+const { state, saveCreds } = await makeCacheManagerAuthState(store, 'my-session')
 
 // Use with Baileys
-const sock = makeWASocket({ auth: authState })
+const sock = makeWASocket({ auth: state })
+
+// Persist credentials when they update
+sock.ev.on('creds.update', saveCreds)
 ```
 
 ### Redis Example
@@ -67,14 +70,18 @@ const store = new Keyv({
 	namespace: 'baileys' // Optional: prefix all keys
 })
 
-const authState = await makeCacheManagerAuthState(store, 'session-id')
-const sock = makeWASocket({ auth: authState })
+const { state, saveCreds } = await makeCacheManagerAuthState(store, 'session-id')
+const sock = makeWASocket({ auth: state })
+
+// Persist credentials when they update
+sock.ev.on('creds.update', saveCreds)
 ```
 
 ### PostgreSQL Example
 
 ```typescript
 import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+import makeWASocket from 'baileys'
 import Keyv from 'keyv'
 import KeyvPostgres from '@keyv/postgres'
 
@@ -84,13 +91,18 @@ const store = new Keyv({
 	namespace: 'baileys'
 })
 
-const authState = await makeCacheManagerAuthState(store, 'session-id')
+const { state, saveCreds } = await makeCacheManagerAuthState(store, 'session-id')
+const sock = makeWASocket({ auth: state })
+
+// Persist credentials when they update
+sock.ev.on('creds.update', saveCreds)
 ```
 
 ### MongoDB Example
 
 ```typescript
 import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+import makeWASocket from 'baileys'
 import Keyv from 'keyv'
 import KeyvMongo from '@keyv/mongo'
 
@@ -100,7 +112,11 @@ const store = new Keyv({
 	namespace: 'sessions'
 })
 
-const authState = await makeCacheManagerAuthState(store, 'session-id')
+const { state, saveCreds } = await makeCacheManagerAuthState(store, 'session-id')
+const sock = makeWASocket({ auth: state })
+
+// Persist credentials when they update
+sock.ev.on('creds.update', saveCreds)
 ```
 
 ### Custom Storage Adapter
@@ -108,32 +124,46 @@ const authState = await makeCacheManagerAuthState(store, 'session-id')
 You can implement your own storage backend by implementing the `StorageAdapter` interface:
 
 ```typescript
+import { makeWASocket } from 'baileys'
 import { makeCacheManagerAuthState, StorageAdapter } from '@rodrigogs/baileys-store'
 
 class MyCustomStorage implements StorageAdapter {
+	private store = new Map<string, string>()
+
 	async get(key: string): Promise<string | undefined> {
-		// Your implementation
-		return await myDatabase.get(key)
+		// Example in-memory implementation
+		return this.store.get(key)
 	}
 	
 	async set(key: string, value: string, ttl?: number): Promise<void> {
-		// Your implementation
-		await myDatabase.set(key, value, ttl)
+		// Example in-memory implementation (ignoring ttl for simplicity)
+		this.store.set(key, value)
 	}
 	
 	async delete(key: string): Promise<boolean> {
-		// Your implementation
-		return await myDatabase.delete(key)
+		// Example in-memory implementation
+		return this.store.delete(key)
 	}
 	
 	async clear(): Promise<void> {
-		// Your implementation
-		await myDatabase.clear()
+		// Example in-memory implementation
+		this.store.clear()
 	}
 }
 
-const customStore = new MyCustomStorage()
-const authState = await makeCacheManagerAuthState(customStore, 'session-id')
+async function start() {
+	const customStore = new MyCustomStorage()
+
+	// Use the custom storage with Baileys auth state
+	const { state, saveCreds } = await makeCacheManagerAuthState(customStore, 'session-id')
+
+	const sock = makeWASocket({
+		auth: state,
+	})
+
+	// Persist updated credentials whenever they change
+	sock.ev.on('creds.update', saveCreds)
+}
 ```
 
 ### Supported Storage Backends

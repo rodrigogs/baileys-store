@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { makeCacheManagerAuthState, Keyv } from './make-cache-manager-store'
+import { makeCacheManagerAuthState } from './make-cache-manager-store'
 
 // Define a minimal Keyv interface matching what we use
 interface MockKeyv {
