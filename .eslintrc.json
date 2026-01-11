@@ -12,18 +12,10 @@
                 "ignoreRestArgs": true
             }
         ],
-        "@typescript-eslint/no-inferrable-types": [
-            "warn"
-        ],
-        "@typescript-eslint/no-redundant-type-constituents": [
-            "warn"
-        ],
-        "@typescript-eslint/no-unnecessary-type-assertion": [
-            "warn"
-        ],
+        "@typescript-eslint/no-inferrable-types": "warn",
+        "@typescript-eslint/no-redundant-type-constituents": "warn",
+        "@typescript-eslint/no-unnecessary-type-assertion": "warn",
         "no-restricted-syntax": "off",
-        "keyword-spacing": [
-            "warn"
-        ]
+        "keyword-spacing": "warn"
     }
 }
