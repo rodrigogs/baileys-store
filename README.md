@@ -5,7 +5,6 @@ A storage implementation for [Baileys](https://github.com/WhiskeySockets/Baileys
 ![GitHub License](https://img.shields.io/github/license/rodrigogs/baileys-store)
 ![npm](https://img.shields.io/npm/v/baileys-store)
 ![GitHub issues](https://img.shields.io/github/issues/rodrigogs/baileys-store)
-![CI](https://github.com/rodrigogs/baileys-store/actions/workflows/lint.yml/badge.svg)
 ![Tests](https://img.shields.io/badge/tests-144%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 
