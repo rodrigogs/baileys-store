@@ -84,7 +84,7 @@ sock.ev.on('creds.update', saveCreds)
 ### PostgreSQL Example
 
 ```typescript
-import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+import { makeKeyvAuthState } from '@rodrigogs/baileys-store'
 import makeWASocket from 'baileys'
 import Keyv from 'keyv'
 import KeyvPostgres from '@keyv/postgres'
@@ -95,7 +95,7 @@ const store = new Keyv({
 	namespace: 'baileys'
 })
 
-const { state, saveCreds } = await makeCacheManagerAuthState(store, 'session-id')
+const { state, saveCreds } = await makeKeyvAuthState(store, 'session-id')
 const sock = makeWASocket({ auth: state })
 
 // Persist credentials when they update
@@ -105,7 +105,7 @@ sock.ev.on('creds.update', saveCreds)
 ### MongoDB Example
 
 ```typescript
-import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+import { makeKeyvAuthState } from '@rodrigogs/baileys-store'
 import makeWASocket from 'baileys'
 import Keyv from 'keyv'
 import KeyvMongo from '@keyv/mongo'
@@ -116,7 +116,7 @@ const store = new Keyv({
 	namespace: 'sessions'
 })
 
-const { state, saveCreds } = await makeCacheManagerAuthState(store, 'session-id')
+const { state, saveCreds } = await makeKeyvAuthState(store, 'session-id')
 const sock = makeWASocket({ auth: state })
 
 // Persist credentials when they update
@@ -129,7 +129,7 @@ You can implement your own storage backend by implementing the `StorageAdapter` 
 
 ```typescript
 import { makeWASocket } from 'baileys'
-import { makeCacheManagerAuthState, StorageAdapter } from '@rodrigogs/baileys-store'
+import { makeKeyvAuthState, StorageAdapter } from '@rodrigogs/baileys-store'
 
 class MyCustomStorage implements StorageAdapter {
 	private store = new Map<string, string>()
@@ -159,7 +159,7 @@ async function start() {
 	const customStore = new MyCustomStorage()
 
 	// Use the custom storage with Baileys auth state
-	const { state, saveCreds } = await makeCacheManagerAuthState(customStore, 'session-id')
+	const { state, saveCreds } = await makeKeyvAuthState(customStore, 'session-id')
 
 	const sock = makeWASocket({
 		auth: state,

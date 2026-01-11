@@ -39,8 +39,8 @@ export interface StorageAdapter {
 /**
  * Creates an authentication state backed by a generic key-value store (e.g. Keyv).
  *
- * @deprecated The function name is misleading as it no longer uses cache-manager.
- * The name is kept for backwards compatibility. Consider it as `makeAuthState` or `makeKeyvAuthState`.
+ * @deprecated The function name is misleading as it no longer uses cache-manager. Use `makeKeyvAuthState` instead.
+ * This function is kept as an alias for backwards compatibility.
  *
  * The returned object is compatible with Baileys' `useMultiFileAuthState` / `useSingleFileAuthState`
  * shape and can be passed directly to Baileys when initializing the connection.
@@ -64,14 +64,18 @@ export interface StorageAdapter {
  *   `clear()` on the entire store, which will delete data from ALL sessions if multiple sessions
  *   share the same store instance. This breaks session isolation.
  *   
- *   **Recommended solutions for session isolation**:
- *   1. Use Keyv with `namespace` option (one namespace per session):
+ *   **Recommended solutions for session isolation (prefer option 1 for most use cases)**:
+ *   1. Use Keyv with the `namespace` option (one namespace per session) when sharing a backend:
  *      ```ts
  *      const store = new Keyv({ namespace: 'session-1' })
- *      // clearState() will only affect this namespace
+ *      // clearState() will only affect this namespace while still sharing the same underlying store
  *      ```
- *   2. Use separate store instances per session
- *   3. Avoid calling `clearState()` if multiple sessions share one store
+ *      This is usually more efficient than creating separate Keyv instances because it reuses the same
+ *      connection/pool while keeping per-session data isolated.
+ *   2. Use separate store instances per session (less efficient than namespaces, but useful if your
+ *      storage backend does not support namespacing or similar isolation features).
+ *   3. If multiple sessions share one store instance and you cannot use namespaces, avoid calling
+ *      `clearState()` and instead clear only the keys that belong to the specific session.
  *
  * @example
  * ```ts
@@ -130,8 +134,8 @@ const makeCacheManagerAuthState = async(store: Keyv | StorageAdapter, sessionKey
 	const removeData = async(file: string) => {
 		try {
 			return await databaseConn.delete(defaultKey(file))
-		} catch {
-			logger.error(`Error removing ${file} from session ${sessionKey}`)
+		} catch (error) {
+			logger.error(`Error removing ${file} from session ${sessionKey}:`, error)
 		}
 	}
 

@@ -120,7 +120,7 @@ class MyStorage implements StorageAdapter {
 }
 
 const store = new MyStorage()
-const { state, saveCreds } = await makeCacheManagerAuthState(store, 'session-id')
+const { state, saveCreds } = await makeKeyvAuthState(store, 'session-id')
 ```
 
 ---

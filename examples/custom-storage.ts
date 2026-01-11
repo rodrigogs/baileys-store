@@ -5,7 +5,7 @@
  * by implementing the StorageAdapter interface.
  */
 
-import { makeCacheManagerAuthState, StorageAdapter } from '@rodrigogs/baileys-store'
+import { makeKeyvAuthState, StorageAdapter } from '@rodrigogs/baileys-store'
 import makeWASocket from 'baileys'
 import * as fs from 'fs/promises'
 import * as path from 'path'
@@ -98,7 +98,7 @@ async function main() {
 
 	// Create auth state
 	const sessionId = 'my-session'
-	const { state, saveCreds } = await makeCacheManagerAuthState(customStore, sessionId)
+	const { state, saveCreds } = await makeKeyvAuthState(customStore, sessionId)
 
 	// Create WhatsApp connection
 	const sock = makeWASocket({

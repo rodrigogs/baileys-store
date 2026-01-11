@@ -3,11 +3,12 @@
  * 
  * Prerequisites:
  * 1. Install dependencies: npm install @rodrigogs/baileys-store baileys keyv @keyv/redis
- * 2. Start Redis: docker run -d -p 6379:6379 redis
+ * 2. Start Redis: docker run -d -p 127.0.0.1:6379:6379 redis
+ *    ⚠️  Note: Binds to localhost only for security. Use proper authentication in production.
  * 3. Run: npx ts-node examples/redis-storage.ts
  */
 
-import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
+import { makeKeyvAuthState } from '@rodrigogs/baileys-store'
 import Keyv from 'keyv'
 import KeyvRedis from '@keyv/redis'
 import makeWASocket, { DisconnectReason } from 'baileys'
@@ -24,7 +25,7 @@ async function main() {
 
 	// Create auth state with session identifier
 	const sessionId = 'my-whatsapp-session'
-	const { state, saveCreds } = await makeCacheManagerAuthState(store, sessionId)
+	const { state, saveCreds } = await makeKeyvAuthState(store, sessionId)
 
 	// Create WhatsApp connection
 	const sock = makeWASocket({
