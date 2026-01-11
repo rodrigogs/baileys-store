@@ -921,6 +921,7 @@ describe('makeInMemoryStore', () => {
 
 			const url = await store.fetchImageUrl('unknown@s.whatsapp.net', mockSocket as any)
 			expect(mockSocket.profilePictureUrl).toHaveBeenCalledWith('unknown@s.whatsapp.net')
+			expect(url).toBe('https://example.com/pic.jpg')
 		})
 
 		it('should fetch image url from socket when contact imgUrl is undefined', async () => {
