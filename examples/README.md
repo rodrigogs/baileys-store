@@ -71,10 +71,10 @@ npx ts-node examples/custom-storage.ts
 
 ### In-Memory (No additional setup)
 ```typescript
-import { makeCacheManagerAuthState, Keyv } from '@rodrigogs/baileys-store'
+import { makeKeyvAuthState, Keyv } from '@rodrigogs/baileys-store'
 
 const store = new Keyv()
-const { state, saveCreds } = await makeCacheManagerAuthState(store, 'session-id')
+const { state, saveCreds } = await makeKeyvAuthState(store, 'session-id')
 ```
 
 ### Redis

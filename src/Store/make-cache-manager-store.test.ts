@@ -129,7 +129,7 @@ describe('makeCacheManagerAuthState', () => {
 			)
 
 			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
-		const result = await authState.state.keys.get('pre-key', ['1']) as Record<string, any>
+			const result = await authState.state.keys.get('pre-key', ['1']) as Record<string, any>
 
 			expect(result['1']).toEqual(keyData)
 		})
@@ -147,9 +147,9 @@ describe('makeCacheManagerAuthState', () => {
 			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 		const result = await authState.state.keys.get('app-state-sync-key', ['key1']) as Record<string, any>
 
-			expect(result['key1']).toBeDefined()
-		})
+		expect(result['key1']).toBeDefined()
 	})
+})
 
 	describe('keys.set', () => {
 		it('should store keys in cache', async () => {

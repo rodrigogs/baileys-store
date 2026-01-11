@@ -128,7 +128,7 @@ sock.ev.on('creds.update', saveCreds)
 You can implement your own storage backend by implementing the `StorageAdapter` interface:
 
 ```typescript
-import { makeWASocket } from 'baileys'
+import makeWASocket from 'baileys'
 import { makeKeyvAuthState, StorageAdapter } from '@rodrigogs/baileys-store'
 
 class MyCustomStorage implements StorageAdapter {
