@@ -1,3 +1,13 @@
+# [2.0.0](https://github.com/rodrigogs/baileys-store/compare/v1.1.0...v2.0.0) (2026-01-12)
+
+
+### Features
+
+* implement comprehensive testing with Vitest (144 tests, 100% line coverage) ([#4](https://github.com/rodrigogs/baileys-store/issues/4)) ([edd2cf4](https://github.com/rodrigogs/baileys-store/commit/edd2cf4552d2f7f41b3ee750b7086fedbb142890))
+* Migrate to Keyv with 100% coverage and enhanced pluggability ([#5](https://github.com/rodrigogs/baileys-store/issues/5)) ([3028f69](https://github.com/rodrigogs/baileys-store/commit/3028f69283350e0a3477e7c5638bd68cbf8815e8))
+
+
+
 # [1.1.0](https://github.com/rodrigogs/baileys-store/compare/v1.0.1...v1.1.0) (2025-11-10)
 
 
