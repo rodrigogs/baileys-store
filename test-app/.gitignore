@@ -3,11 +3,14 @@ node_modules/
 
 # Build output
 dist/
+build/
+.svelte-kit/
 
 # WhatsApp auth and store files
 auth_info_*/
 baileys_store_*.json
 *.session
+.data/
 
 # Temporary files and event monitoring
 .tmp/

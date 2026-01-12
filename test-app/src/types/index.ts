@@ -8,14 +8,15 @@ export interface EventInfo {
 }
 
 export interface ConnectionState {
-  isConnected: boolean
+  status: 'disconnected' | 'connecting' | 'connected'
+  qrCode?: string
   user?: {
     id: string
-    name?: string | undefined
-  } | undefined
-  connectionAttempts: number
-  lastConnectionTime?: Date
-  baileysVersion: string
+    name?: string
+  }
+  lastConnectedAt?: number
+  hasSession?: boolean
+  lastUpdate?: number
 }
 
 export interface StoreStats {
