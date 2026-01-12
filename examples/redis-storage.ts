@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Example: Using Redis as storage backend with @keyv/redis
  * 

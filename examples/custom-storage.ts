@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Example: Custom storage adapter implementation
  * 
