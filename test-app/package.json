@@ -1,46 +1,45 @@
 {
-  "name": "baileys-store-test-app",
-  "version": "1.0.0",
-  "description": "Test application for baileys-store with real WhatsApp authentication",
-  "private": true,
-  "type": "module",
-  "main": "dist/index.js",
-  "scripts": {
-    "build": "tsc",
-    "start": "npm run build && node dist/index.js",
-    "dev": "tsx src/index.ts",
-    "clean": "rm -rf dist .tmp/auth_info_* *.json baileys_store_*.json wa-logs.txt",
-    "test:6": "BAILEYS_VERSION=6 tsx src/index.ts",
-    "test:7": "BAILEYS_VERSION=7 tsx src/index.ts",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
-  },
-  "dependencies": {
-    "@rodrigogs/baileys-store": "file:../",
-    "baileys6": "npm:@whiskeysockets/baileys@^6.7.21",
-    "baileys7": "npm:@whiskeysockets/baileys@^7.0.0-rc.6",
-    "blessed": "^0.1.81",
-    "blessed-contrib": "^4.11.0",
-    "chalk": "^4.1.2",
-    "chokidar": "^3.5.3",
-    "date-fns": "^2.30.0",
-    "keypress": "^0.2.1",
-    "qrcode": "^1.5.3",
-    "readline": "^1.3.0"
-  },
-  "devDependencies": {
-    "@types/blessed": "^0.1.21",
-    "@types/keypress": "^2.0.30",
-    "@types/node": "^20.0.0",
-    "@types/qrcode": "^1.5.5",
-    "@typescript-eslint/eslint-plugin": "^8.44.0",
-    "@typescript-eslint/parser": "^8.44.0",
-    "eslint": "^9.35.0",
-    "eslint-plugin-unused-imports": "^4.2.0",
-    "tsx": "^4.20.5",
-    "typescript": "^5.0.0"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  }
+	"name": "baileys-store-test-app",
+	"version": "2.0.0",
+	"description": "Test application for baileys-store with Svelte UI",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"type-check": "svelte-kit sync && tsc --noEmit",
+		"lint": "biome lint ./src",
+		"lint:fix": "biome lint --write ./src",
+		"format": "biome format ./src",
+		"format:fix": "biome format --write ./src",
+		"biome:check": "biome check ./src",
+		"biome:fix": "biome check --write ./src"
+	},
+	"dependencies": {
+		"@rodrigogs/baileys-store": "file:../",
+		"baileys-v6": "npm:@whiskeysockets/baileys@^6.7.21",
+		"baileys-v7": "npm:@whiskeysockets/baileys@^7.0.0-rc.9",
+		"pino": "^9.6.0",
+		"qrcode": "^1.5.3"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.11",
+		"@sveltejs/adapter-node": "^5.2.12",
+		"@sveltejs/kit": "^2.21.1",
+		"@sveltejs/vite-plugin-svelte": "^5.1.0",
+		"@tailwindcss/vite": "^4.1.10",
+		"@types/node": "^22.15.29",
+		"@types/qrcode": "^1.5.5",
+		"svelte": "^5.34.7",
+		"svelte-check": "^4.2.1",
+		"tailwindcss": "^4.1.10",
+		"typescript": "^5.8.3",
+		"vite": "^6.3.5"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
 }

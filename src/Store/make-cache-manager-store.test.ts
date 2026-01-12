@@ -1,16 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import makeCacheManagerAuthState from './make-cache-manager-store'
+import { makeCacheManagerAuthState, makeKeyvAuthState } from './make-cache-manager-store'
 
-// Define a minimal Cache interface matching what we use
-interface MockCache {
+// Define a minimal Keyv interface matching what we use
+interface MockKeyv {
 	get: (key: string) => Promise<string | undefined>
 	set: (key: string, value: string, ttl?: number) => Promise<void>
-	del: (key: string) => Promise<boolean>
+	delete: (key: string) => Promise<boolean>
+	clear: () => Promise<void>
 	store: Map<string, string>
 }
 
-// Mock cache-manager store
-const createMockCache = (): MockCache => {
+// Mock Keyv store
+const createMockKeyv = (): MockKeyv => {
 	const store = new Map<string, string>()
 
 	return {
@@ -19,26 +20,29 @@ const createMockCache = (): MockCache => {
 		set: vi.fn(async (key: string, value: string, _ttl?: number) => {
 			store.set(key, value)
 		}),
-		del: vi.fn(async (key: string) => {
+		delete: vi.fn(async (key: string) => {
 			const existed = store.has(key)
 			store.delete(key)
 			return existed
+		}),
+		clear: vi.fn(async () => {
+			store.clear()
 		}),
 	}
 }
 
 describe('makeCacheManagerAuthState', () => {
-	let mockCache: MockCache
+	let mockKeyv: MockKeyv
 	const sessionKey = 'test-session'
 
 	beforeEach(() => {
-		mockCache = createMockCache()
+		mockKeyv = createMockKeyv()
 		vi.clearAllMocks()
 	})
 
 	describe('initialization', () => {
 		it('should initialize with new credentials when none exist', async () => {
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 
 			expect(authState.state.creds).toBeDefined()
 			expect(authState.state.creds.noiseKey).toBeDefined()
@@ -68,12 +72,12 @@ describe('makeCacheManagerAuthState', () => {
 				platform: undefined,
 			}
 
-			mockCache.store.set(
+			mockKeyv.store.set(
 				`${sessionKey}:creds`,
 				JSON.stringify(existingCreds)
 			)
 
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 
 			expect(authState.state.creds.registrationId).toBe(12345)
 		})
@@ -81,22 +85,22 @@ describe('makeCacheManagerAuthState', () => {
 
 	describe('saveCreds', () => {
 		it('should save credentials to cache', async () => {
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 
 			await authState.saveCreds()
 
-			expect(mockCache.set).toHaveBeenCalledWith(
+			expect(mockKeyv.set).toHaveBeenCalledWith(
 				`${sessionKey}:creds`,
 				expect.any(String),
-				63115200 // 2 years TTL
+				63115200000 // 2 years TTL in milliseconds
 			)
 		})
 
 		it('should persist credentials correctly', async () => {
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 			await authState.saveCreds()
 
-			const savedData = mockCache.store.get(`${sessionKey}:creds`)
+			const savedData = mockKeyv.store.get(`${sessionKey}:creds`)
 			expect(savedData).toBeDefined()
 
 			const parsed = JSON.parse(savedData!)
@@ -106,7 +110,7 @@ describe('makeCacheManagerAuthState', () => {
 
 	describe('keys.get', () => {
 		it('should return empty object for non-existent keys', async () => {
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 
 			const result = await authState.state.keys.get('pre-key', ['1', '2', '3'])
 
@@ -119,13 +123,13 @@ describe('makeCacheManagerAuthState', () => {
 
 		it('should return stored keys', async () => {
 			const keyData = { keyId: 1, publicKey: 'test-public' }
-			mockCache.store.set(
+			mockKeyv.store.set(
 				`${sessionKey}:pre-key-1`,
 				JSON.stringify(keyData)
 			)
 
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
-		const result = await authState.state.keys.get('pre-key', ['1']) as Record<string, any>
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
+			const result = await authState.state.keys.get('pre-key', ['1']) as Record<string, any>
 
 			expect(result['1']).toEqual(keyData)
 		})
@@ -135,21 +139,21 @@ describe('makeCacheManagerAuthState', () => {
 				fingerprint: { rawId: 123 },
 				timestamp: Date.now(),
 			}
-			mockCache.store.set(
+			mockKeyv.store.set(
 				`${sessionKey}:app-state-sync-key-key1`,
 				JSON.stringify(keyData)
 			)
 
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 		const result = await authState.state.keys.get('app-state-sync-key', ['key1']) as Record<string, any>
 
-			expect(result['key1']).toBeDefined()
-		})
+		expect(result['key1']).toBeDefined()
 	})
+})
 
 	describe('keys.set', () => {
 		it('should store keys in cache', async () => {
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 
 			await authState.state.keys.set({
 				'pre-key': {
@@ -157,7 +161,7 @@ describe('makeCacheManagerAuthState', () => {
 				},
 			})
 
-			expect(mockCache.set).toHaveBeenCalledWith(
+			expect(mockKeyv.set).toHaveBeenCalledWith(
 				`${sessionKey}:pre-key-1`,
 				expect.any(String),
 				undefined
@@ -165,7 +169,7 @@ describe('makeCacheManagerAuthState', () => {
 		})
 
 		it('should delete keys when value is null/undefined', async () => {
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 
 			await authState.state.keys.set({
 				'pre-key': {
@@ -173,11 +177,11 @@ describe('makeCacheManagerAuthState', () => {
 				},
 			})
 
-			expect(mockCache.del).toHaveBeenCalledWith(`${sessionKey}:pre-key-1`)
+			expect(mockKeyv.delete).toHaveBeenCalledWith(`${sessionKey}:pre-key-1`)
 		})
 
 		it('should handle multiple key types', async () => {
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 
 			await authState.state.keys.set({
 				'pre-key': {
@@ -188,39 +192,58 @@ describe('makeCacheManagerAuthState', () => {
 				},
 			})
 
-			expect(mockCache.set).toHaveBeenCalledTimes(2)
+			expect(mockKeyv.set).toHaveBeenCalledTimes(2)
 		})
 	})
 
 	describe('clearState', () => {
 		it('should exist as a function', async () => {
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 
 			expect(authState.clearState).toBeTypeOf('function')
 		})
 
-		it('should not throw when called', async () => {
-			const authState = await makeCacheManagerAuthState(mockCache as any, sessionKey)
+		it('should call clear on the store', async () => {
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
 
-			await expect(authState.clearState()).resolves.not.toThrow()
+			await authState.clearState()
+
+			expect(mockKeyv.clear).toHaveBeenCalledTimes(1)
+		})
+
+		it('should clear all data from store', async () => {
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, sessionKey)
+			
+			// Add some data
+			await authState.saveCreds()
+			await authState.state.keys.set({
+				'pre-key': { '1': { keyId: 1 } },
+			})
+
+			expect(mockKeyv.store.size).toBeGreaterThan(0)
+
+			// Clear the state
+			await authState.clearState()
+
+			expect(mockKeyv.store.size).toBe(0)
 		})
 	})
 
 	describe('session key namespacing', () => {
 		it('should namespace all keys with session key', async () => {
-			const authState = await makeCacheManagerAuthState(mockCache as any, 'my-session')
+			const authState = await makeCacheManagerAuthState(mockKeyv as any, 'my-session')
 
 			await authState.saveCreds()
 			await authState.state.keys.set({
 				'pre-key': { '1': { keyId: 1 } },
 			})
 
-			expect(mockCache.set).toHaveBeenCalledWith(
+			expect(mockKeyv.set).toHaveBeenCalledWith(
 				'my-session:creds',
 				expect.any(String),
 				expect.any(Number)
 			)
-			expect(mockCache.set).toHaveBeenCalledWith(
+			expect(mockKeyv.set).toHaveBeenCalledWith(
 				'my-session:pre-key-1',
 				expect.any(String),
 				undefined
@@ -228,27 +251,27 @@ describe('makeCacheManagerAuthState', () => {
 		})
 
 		it('should isolate data between different sessions', async () => {
-			const session1 = await makeCacheManagerAuthState(mockCache as any, 'session1')
-			const session2 = await makeCacheManagerAuthState(mockCache as any, 'session2')
+			const session1 = await makeCacheManagerAuthState(mockKeyv as any, 'session1')
+			const session2 = await makeCacheManagerAuthState(mockKeyv as any, 'session2')
 
 			await session1.saveCreds()
 			await session2.saveCreds()
 
-			expect(mockCache.store.has('session1:creds')).toBe(true)
-			expect(mockCache.store.has('session2:creds')).toBe(true)
+			expect(mockKeyv.store.has('session1:creds')).toBe(true)
+			expect(mockKeyv.store.has('session2:creds')).toBe(true)
 		})
 	})
 
 	describe('error handling in readData', () => {
 		it('should return null and log error when cache.get throws', async () => {
-			const errorCache = {
-				...createMockCache(),
+			const errorKeyv = {
+				...createMockKeyv(),
 				get: vi.fn(async () => {
 					throw new Error('Cache error')
 				}),
 			}
 
-			const authState = await makeCacheManagerAuthState(errorCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(errorKeyv as any, sessionKey)
 			// Should initialize with new creds since reading failed
 			expect(authState.state.creds).toBeDefined()
 			expect(authState.state.creds.noiseKey).toBeDefined()
@@ -256,15 +279,15 @@ describe('makeCacheManagerAuthState', () => {
 	})
 
 	describe('error handling in removeData', () => {
-		it('should log error when cache.del throws', async () => {
-			const errorCache = {
-				...createMockCache(),
-				del: vi.fn(async () => {
+		it('should log error when cache.delete throws', async () => {
+			const errorKeyv = {
+				...createMockKeyv(),
+				delete: vi.fn(async () => {
 					throw new Error('Delete error')
 				}),
 			}
 
-			const authState = await makeCacheManagerAuthState(errorCache as any, sessionKey)
+			const authState = await makeCacheManagerAuthState(errorKeyv as any, sessionKey)
 
 			// Should not throw when deleting fails
 			await expect(
@@ -272,6 +295,40 @@ describe('makeCacheManagerAuthState', () => {
 					'pre-key': { '1': null },
 				})
 			).resolves.not.toThrow()
+		})
+	})
+
+	describe('error handling in clearState', () => {
+		it('should log error when clear throws', async () => {
+			const errorKeyv = {
+				...createMockKeyv(),
+				clear: vi.fn(async () => {
+					throw new Error('Clear error')
+				}),
+			}
+
+			const authState = await makeCacheManagerAuthState(errorKeyv as any, sessionKey)
+
+			// Should not throw when clear fails
+			await expect(authState.clearState()).resolves.not.toThrow()
+			expect(errorKeyv.clear).toHaveBeenCalledTimes(1)
+		})
+	})
+
+	describe('makeKeyvAuthState alias', () => {
+		it('should work with makeKeyvAuthState alias', async() => {
+			const keyv = createMockKeyv()
+			const sessionKey = 'test-session'
+
+			// Use the new alias
+			const authState = await makeKeyvAuthState(keyv as any, sessionKey)
+
+			// Should have same structure as makeCacheManagerAuthState
+			expect(authState).toHaveProperty('state')
+			expect(authState).toHaveProperty('saveCreds')
+			expect(authState).toHaveProperty('clearState')
+			expect(authState.state).toHaveProperty('creds')
+			expect(authState.state).toHaveProperty('keys')
 		})
 	})
 })

@@ -5,7 +5,7 @@ A storage implementation for [Baileys](https://github.com/WhiskeySockets/Baileys
 ![GitHub License](https://img.shields.io/github/license/rodrigogs/baileys-store)
 ![npm](https://img.shields.io/npm/v/baileys-store)
 ![GitHub issues](https://img.shields.io/github/issues/rodrigogs/baileys-store)
-![Tests](https://img.shields.io/badge/tests-144%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-151%20passing-brightgreen)
 ![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
 
 # Installation
@@ -23,7 +23,7 @@ Note: This package requires `baileys` as a peer dependency. Make sure to install
 This package provides different storage implementations for Baileys:
 
 1. In-Memory Store
-2. Cache Manager Auth State
+2. Keyv Auth State (with any Keyv-compatible storage backend)
 
 ## In-Memory Store
 
@@ -35,19 +35,163 @@ const store = makeInMemoryStore({})
 store.bind(baileysSock)
 ```
 
-## Cache Manager Auth State
+## Keyv Auth State
+
+The library uses **Keyv** for storage, making it easy to plug in any database or memory system.
+
+> 💡 **Note**: The function `makeCacheManagerAuthState` is kept for backwards compatibility but is deprecated. 
+> Use `makeKeyvAuthState` for new projects as it better reflects the implementation.
+
+### Quick Start (In-Memory)
 
 ```typescript
-import { makeCacheManagerAuthState } from '@rodrigogs/baileys-store'
-import { caching } from 'cache-manager'
+import { makeKeyvAuthState, Keyv } from '@rodrigogs/baileys-store'
+import makeWASocket from 'baileys'
 
-// Create a store with cache-manager
-const store = await caching('memory')
-// or any other cache-manager storage
-const authState = await makeCacheManagerAuthState(store, 'session-key')
-// Use the auth state in your baileys connection
-const sock = makeWASocket({ auth: authState })
+// Create an in-memory store with namespace for session isolation
+const store = new Keyv({ namespace: 'my-session' })
+const { state, saveCreds } = await makeKeyvAuthState(store, 'my-session')
+
+// Use with Baileys
+const sock = makeWASocket({ auth: state })
+
+// Persist credentials when they update
+sock.ev.on('creds.update', saveCreds)
 ```
+
+### Redis Example
+
+```typescript
+import { makeKeyvAuthState } from '@rodrigogs/baileys-store'
+import Keyv from 'keyv'
+import KeyvRedis from '@keyv/redis'
+import makeWASocket from 'baileys'
+
+// Install: npm install @keyv/redis
+// Use namespace for session isolation (important for multi-session apps)
+const store = new Keyv({
+	store: new KeyvRedis('redis://localhost:6379'),
+	namespace: 'session-id' // Each session should have unique namespace
+})
+
+const { state, saveCreds } = await makeKeyvAuthState(store, 'session-id')
+const sock = makeWASocket({ auth: state })
+
+// Persist credentials when they update
+sock.ev.on('creds.update', saveCreds)
+```
+
+### PostgreSQL Example
+
+```typescript
+import { makeKeyvAuthState } from '@rodrigogs/baileys-store'
+import makeWASocket from 'baileys'
+import Keyv from 'keyv'
+import KeyvPostgres from '@keyv/postgres'
+
+// Install: npm install @keyv/postgres
+const store = new Keyv({
+	store: new KeyvPostgres('postgresql://user:pass@localhost:5432/dbname'),
+	namespace: 'baileys'
+})
+
+const { state, saveCreds } = await makeKeyvAuthState(store, 'session-id')
+const sock = makeWASocket({ auth: state })
+
+// Persist credentials when they update
+sock.ev.on('creds.update', saveCreds)
+```
+
+### MongoDB Example
+
+```typescript
+import { makeKeyvAuthState } from '@rodrigogs/baileys-store'
+import makeWASocket from 'baileys'
+import Keyv from 'keyv'
+import KeyvMongo from '@keyv/mongo'
+
+// Install: npm install @keyv/mongo
+const store = new Keyv({
+	store: new KeyvMongo('mongodb://localhost:27017/baileys'),
+	namespace: 'sessions'
+})
+
+const { state, saveCreds } = await makeKeyvAuthState(store, 'session-id')
+const sock = makeWASocket({ auth: state })
+
+// Persist credentials when they update
+sock.ev.on('creds.update', saveCreds)
+```
+
+### Custom Storage Adapter
+
+You can implement your own storage backend by implementing the `StorageAdapter` interface:
+
+```typescript
+import makeWASocket from 'baileys'
+import { makeKeyvAuthState, StorageAdapter } from '@rodrigogs/baileys-store'
+
+class MyCustomStorage implements StorageAdapter {
+	private store = new Map<string, string>()
+
+	async get(key: string): Promise<string | undefined> {
+		// Example in-memory implementation
+		return this.store.get(key)
+	}
+	
+	async set(key: string, value: string, ttl?: number): Promise<void> {
+		// Example in-memory implementation (ignoring ttl for simplicity)
+		this.store.set(key, value)
+	}
+	
+	async delete(key: string): Promise<boolean> {
+		// Example in-memory implementation
+		return this.store.delete(key)
+	}
+	
+	async clear(): Promise<void> {
+		// Example in-memory implementation
+		this.store.clear()
+	}
+}
+
+async function start() {
+	const customStore = new MyCustomStorage()
+
+	// Use the custom storage with Baileys auth state
+	const { state, saveCreds } = await makeKeyvAuthState(customStore, 'session-id')
+
+	const sock = makeWASocket({
+		auth: state,
+	})
+
+	// Persist updated credentials whenever they change
+	sock.ev.on('creds.update', saveCreds)
+}
+```
+
+### Supported Storage Backends
+
+Keyv provides official adapters for:
+
+| Backend | Package | Installation |
+|---------|---------|-------------|
+| **Redis** | `@keyv/redis` | `npm install @keyv/redis` |
+| **PostgreSQL** | `@keyv/postgres` | `npm install @keyv/postgres` |
+| **MongoDB** | `@keyv/mongo` | `npm install @keyv/mongo` |
+| **MySQL** | `@keyv/mysql` | `npm install @keyv/mysql` |
+| **SQLite** | `@keyv/sqlite` | `npm install @keyv/sqlite` |
+| **Memcached** | `@keyv/memcache` | `npm install @keyv/memcache` |
+| **Etcd** | `@keyv/etcd` | `npm install @keyv/etcd` |
+
+For more storage options and advanced configurations, see the [Keyv documentation](https://github.com/jaredwray/keyv).
+
+### More Examples
+
+Check the [examples](examples/) directory for complete, runnable examples:
+- **[Redis Storage](examples/redis-storage.ts)** - Production-ready Redis backend
+- **[Custom Storage Adapter](examples/custom-storage.ts)** - Implement your own storage
+- **[Comparison Guide](examples/README.md)** - Choose the right backend for your needs
 
 ## Testing & Reference Implementation
 

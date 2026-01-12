@@ -117,6 +117,15 @@ describe('makeInMemoryStore', () => {
 				expect(unarchivedKey).toContain('1')
 			})
 
+			it('should handle chat without conversationTimestamp', () => {
+				const chatKey = waChatKey(true)
+				const chat = createChat('test@s.whatsapp.net', { conversationTimestamp: undefined })
+				const key = chatKey.key(chat)
+
+				// Key should still be generated without timestamp
+				expect(key).toContain('test@s.whatsapp.net')
+			})
+
 			it('should compare keys correctly', () => {
 				const chatKey = waChatKey(true)
 				expect(chatKey.compare('a', 'b')).toBeGreaterThan(0)
@@ -335,6 +344,16 @@ describe('makeInMemoryStore', () => {
 			expect(storeNoSocket.contacts['123@s.whatsapp.net'].imgUrl).toBeUndefined()
 		})
 
+		it('should handle contact update without imgUrl property', () => {
+			mockEmitter.emit('contacts.upsert', [createContact('123@s.whatsapp.net', 'John')])
+			// Update contact without imgUrl field (neither 'changed' nor 'removed')
+			mockEmitter.emit('contacts.update', [{ id: '123@s.whatsapp.net' }])
+
+			// Should not crash, contact should still exist
+			expect(store.contacts['123@s.whatsapp.net']).toBeDefined()
+			expect(store.contacts['123@s.whatsapp.net'].name).toBe('John')
+		})
+
 		it('should handle update for non-existent contact by hash lookup', async () => {
 			mockEmitter.emit('contacts.upsert', [createContact('123@s.whatsapp.net', 'John')])
 			// Update with hash-like id (simulating WhatsApp's behavior)
@@ -342,6 +361,33 @@ describe('makeInMemoryStore', () => {
 
 			// Should not crash
 			await new Promise(resolve => setTimeout(resolve, 10))
+		})
+
+		it('should log debug when contact not found by id or hash', async () => {
+			// Add some existing contacts first to ensure hash lookup happens
+			mockEmitter.emit('contacts.upsert', [
+				createContact('111@s.whatsapp.net', 'Alice'),
+				createContact('222@s.whatsapp.net', 'Bob'),
+			])
+
+			// Wait for the upsert to complete
+			await new Promise(resolve => setTimeout(resolve, 10))
+
+			// Emit update for a completely non-existent contact
+			// The ID format doesn't match any existing contact or hash
+			mockEmitter.emit('contacts.update', [{ 
+				id: 'completely-nonexistent-hash-abc123',
+				imgUrl: 'removed'
+			}])
+
+			// Wait for async processing
+			await new Promise(resolve => setTimeout(resolve, 100))
+
+			// Should not crash - the update was silently ignored with debug log
+			// The existing contacts should remain unchanged
+			expect(store.contacts['111@s.whatsapp.net']).toBeDefined()
+			expect(store.contacts['222@s.whatsapp.net']).toBeDefined()
+			expect(store.contacts['completely-nonexistent-hash-abc123']).toBeUndefined()
 		})
 	})
 
@@ -372,6 +418,13 @@ describe('makeInMemoryStore', () => {
 			mockEmitter.emit('chats.update', [{ id: '123@s.whatsapp.net', unreadCount: 3 }])
 
 			expect(store.chats.get('123@s.whatsapp.net')?.unreadCount).toBe(8)
+		})
+
+		it('should accumulate unread counts from undefined', () => {
+			mockEmitter.emit('chats.upsert', [createChat('123@s.whatsapp.net', { unreadCount: undefined })])
+			mockEmitter.emit('chats.update', [{ id: '123@s.whatsapp.net', unreadCount: 3 }])
+
+			expect(store.chats.get('123@s.whatsapp.net')?.unreadCount).toBe(3)
 		})
 
 		it('should not accumulate when unreadCount is 0', () => {
@@ -633,6 +686,23 @@ describe('makeInMemoryStore', () => {
 				action: 'demote',
 			})
 
+			expect(store.groupMetadata[jid].participants[0].isAdmin).toBe(false)
+		})
+
+		it('should handle promote/demote for non-matching participant', () => {
+			const jid = '123@g.us'
+			store.groupMetadata[jid] = createGroupMetadata(jid, 'Group', [
+				{ id: 'user1@s.whatsapp.net', isAdmin: false, isSuperAdmin: false },
+			])
+
+			mockEmitter.emit('group-participants.update', {
+				id: jid,
+				author: 'admin@s.whatsapp.net',
+				participants: ['user2@s.whatsapp.net'], // Different user
+				action: 'promote',
+			})
+
+			// user1 should remain not admin
 			expect(store.groupMetadata[jid].participants[0].isAdmin).toBe(false)
 		})
 

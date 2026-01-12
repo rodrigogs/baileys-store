@@ -1,152 +1,51 @@
 /**
- * Type-safe Baileys loader that dynamically imports the correct version
- * Uses union types from the types file for cross-version compatibility
+ * Baileys module loader
+ * 
+ * Provides typed access to Baileys exports with support for multiple versions.
+ * Allows switching between Baileys v6 and v7 at runtime.
  */
 
-import type {
-  WASocket,
-  DisconnectReasonType,
-  Proto,
-  SupportedVersion
-} from './types/baileys.js'
+// biome-ignore lint/suspicious/noExplicitAny: Dynamic module loading requires any
+type BaileysModule = any
 
-import {
-  BAILEYS_MODULES,
-  SUPPORTED_VERSIONS
-} from './types/baileys.js'
+let currentVersion: '6' | '7' = '6'
+let baileysModule: BaileysModule
 
-// Version configuration
-const BAILEYS_VERSION = (process.env['BAILEYS_VERSION']) || '7'
+// Load initial version
+await loadBaileysVersion('6')
 
 /**
- * Validates and normalizes the Baileys version
+ * Load a specific Baileys version
  */
-function validateVersion(version: string): SupportedVersion {
-  if (!SUPPORTED_VERSIONS.includes(version as SupportedVersion)) {
-    throw new Error(
-      `Unsupported Baileys version: ${version}. Supported versions: ${SUPPORTED_VERSIONS.join(', ')}`
-    )
-  }
-  return version as SupportedVersion
+export async function loadBaileysVersion(version: '6' | '7'): Promise<void> {
+	if (version === '6') {
+		baileysModule = await import('baileys-v6')
+	} else {
+		baileysModule = await import('baileys-v7')
+	}
+	currentVersion = version
 }
 
 /**
- * Dynamically loads the specified Baileys version
+ * Get the currently loaded Baileys version
  */
-async function loadBaileysModule(version: SupportedVersion) {
-  const moduleName = BAILEYS_MODULES[version]
-  
-  try {
-    console.log(`🔄 Loading Baileys v${version} from package: ${moduleName}`)
-    
-    // Dynamic import with proper error handling
-    const baileys = await import(moduleName)
-    
-    console.log(`✅ Successfully loaded Baileys v${version}`)
-    return baileys
-    
-  } catch (error: unknown) {
-    throw new Error(
-      `Failed to load Baileys v${version} from '${moduleName}': ${error instanceof Error ? error.message : String(error)}`
-    )
-  }
+export function getCurrentBaileysVersion(): '6' | '7' {
+	return currentVersion
 }
 
-// Load the module once and cache it
-const currentVersion = validateVersion(BAILEYS_VERSION)
-let baileysModule: any = null
+export const getMakeWASocket = () => baileysModule.makeWASocket
 
-// Async initialization function
-export async function initializeBaileys() {
-  if (!baileysModule) {
-    baileysModule = await loadBaileysModule(currentVersion)
-  }
-  return baileysModule
-}
+export const getDisconnectReason = () => baileysModule.DisconnectReason
 
-// Lazy getter functions that initialize on first use
-export async function getMakeWASocket(): Promise<(config: unknown) => WASocket> {
-  const baileys = await initializeBaileys()
-  return baileys.default
-}
+export const getFetchLatestBaileysVersion = () => baileysModule.fetchLatestBaileysVersion
 
-export async function getDisconnectReason(): Promise<DisconnectReasonType> {
-  const baileys = await initializeBaileys()
-  return baileys.DisconnectReason
-}
+export const getUseMultiFileAuthState = () => baileysModule.useMultiFileAuthState
 
-export async function getFetchLatestBaileysVersion(): Promise<() => Promise<{ version: [number, number, number]; isLatest: boolean }>> {
-  const baileys = await initializeBaileys()
-  return baileys.fetchLatestBaileysVersion
-}
-
-export async function getUseMultiFileAuthState(): Promise<(folder: string) => Promise<{ state: unknown; saveCreds: () => Promise<void> }>> {
-  const baileys = await initializeBaileys()
-  return baileys.useMultiFileAuthState
-}
-
-export async function getProto(): Promise<Proto> {
-  const baileys = await initializeBaileys()
-  return baileys.proto
-}
-
-export async function getJidDecode(): Promise<(jid: string) => { user: string; server: string } | undefined> {
-  const baileys = await initializeBaileys()
-  return baileys.jidDecode
-}
-
-export async function getIsJidBroadcast(): Promise<(jid: string) => boolean> {
-  const baileys = await initializeBaileys()
-  return baileys.isJidBroadcast || (() => false)
-}
-
-export async function getIsJidGroup(): Promise<(jid: string) => boolean> {
-  const baileys = await initializeBaileys()
-  return baileys.isJidGroup || (() => false)
-}
-
-export async function getIsJidUser(): Promise<(jid: string) => boolean> {
-  const baileys = await initializeBaileys()
-  return baileys.isJidUser || (() => false)
-}
-
-export async function getDownloadMediaMessage(): Promise<(...args: unknown[]) => Promise<Buffer>> {
-  const baileys = await initializeBaileys()
-  return baileys.downloadMediaMessage || (async () => Buffer.alloc(0))
-}
-
-// Version info
-export const baileysVersion = currentVersion
-export const baileysModuleName = BAILEYS_MODULES[currentVersion]
-
-// Utility function for version info
-export function getBaileysInfo() {
-  return {
-    version: currentVersion,
-    moduleName: baileysModuleName,
-    supportedVersions: [...SUPPORTED_VERSIONS]
-  }
-}
+export const getProto = () => baileysModule.proto
 
 // Re-export types
 export type {
-  WASocket,
-  ConnectionState,
-  DisconnectReasonType,
-  WAMessage,
-  AnyMessageContent,
-  MessageUpsertType,
-  PresenceData,
-  Contact,
-  Chat,
-  AuthenticationState,
-  SignalDataTypeMap,
-  BaileysEventMap,
-  WAMessageKey,
-  GroupMetadata,
-  ParticipantAction,
-  WAMessageContent
+AuthenticationState,
+WAMessageKey,
+WAMessageContent
 } from './types/baileys.js'
-
-// Export MessageKey as alias for WAMessageKey
-export type { WAMessageKey as MessageKey } from './types/baileys.js'
